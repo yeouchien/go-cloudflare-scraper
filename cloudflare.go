@@ -16,7 +16,7 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-const userAgent = `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36`
+const UserAgent = `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36`
 
 type Transport struct {
 	upstream http.RoundTripper
@@ -33,7 +33,7 @@ func NewTransport(upstream http.RoundTripper) (*Transport, error) {
 
 func (t Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if r.Header.Get("User-Agent") == "" {
-		r.Header.Set("User-Agent", userAgent)
+		r.Header.Set("User-Agent", UserAgent)
 	}
 
 	resp, err := t.upstream.RoundTrip(r)
