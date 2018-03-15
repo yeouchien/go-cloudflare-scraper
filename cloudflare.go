@@ -16,11 +16,25 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-const UserAgent = `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36`
+const UserAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36`
 
 type Transport struct {
 	upstream http.RoundTripper
 	Cookies  http.CookieJar
+}
+
+func NewClient() (c *http.Client, err error) {
+	transport, err := NewTransport(http.DefaultTransport)
+	if err != nil {
+		return
+	}
+
+	c = &http.Client{
+		Transport: transport,
+		Jar:       transport.Cookies,
+	}
+
+	return
 }
 
 func NewTransport(upstream http.RoundTripper) (*Transport, error) {
@@ -36,13 +50,18 @@ func (t Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		r.Header.Set("User-Agent", UserAgent)
 	}
 
+	if r.Header.Get("Referer") == "" {
+		r.Header.Set("Referer", r.URL.String())
+	}
+
 	resp, err := t.upstream.RoundTrip(r)
 	if err != nil {
 		return nil, err
 	}
 
+	serverHeader := resp.Header.Get("Server")
 	// Check if Cloudflare anti-bot is on
-	if resp.StatusCode == 503 && resp.Header.Get("Server") == "cloudflare" {
+	if resp.StatusCode == 503 && (serverHeader == "cloudflare-nginx" || serverHeader == "cloudflare") {
 		log.Printf("Solving challenge for %s", resp.Request.URL.Hostname())
 		resp, err := t.solveChallenge(resp)
 
